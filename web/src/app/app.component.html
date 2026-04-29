@@ -1,0 +1,32 @@
+<main>
+  <h1>Products</h1>
+
+  <form (submit)="$event.preventDefault(); submit()">
+    <input name="name" [(ngModel)]="form.name" placeholder="Name" />
+    <input name="price" type="number" step="0.01" [(ngModel)]="form.price" placeholder="Price" />
+    <input name="stock" type="number" [(ngModel)]="form.stock" placeholder="Stock" />
+    <button type="submit">{{ editingId === null ? 'Create' : 'Update' }}</button>
+    <button type="button" (click)="reset()" *ngIf="editingId !== null">Cancel</button>
+  </form>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+
+  <table>
+    <thead>
+      <tr><th>Id</th><th>Name</th><th>Price</th><th>Stock</th><th></th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let p of products">
+        <td>{{ p.id }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.price | number:'1.2-2' }}</td>
+        <td>{{ p.stock }}</td>
+        <td>
+          <button (click)="edit(p)">Edit</button>
+          <button (click)="remove(p.id)">Delete</button>
+        </td>
+      </tr>
+      <tr *ngIf="products.length === 0"><td colspan="5">No products yet.</td></tr>
+    </tbody>
+  </table>
+</main>
