@@ -1,11 +1,34 @@
 using DockerCrudDemo.Worker.Consumers;
 using MassTransit;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 var rabbitHost = builder.Configuration["RabbitMq:Host"] ?? "localhost";
 var rabbitUser = builder.Configuration["RabbitMq:User"] ?? "guest";
 var rabbitPass = builder.Configuration["RabbitMq:Password"] ?? "guest";
+
+var serviceName = "worker";
+var resource = ResourceBuilder.CreateDefault().AddService(serviceName);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddOpenTelemetry(o =>
+{
+    o.IncludeFormattedMessage = true;
+    o.IncludeScopes = true;
+    o.ParseStateValues = true;
+    o.SetResourceBuilder(resource);
+    o.AddOtlpExporter();
+});
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService(serviceName))
+    .WithTracing(t => t
+        .AddSource("MassTransit")
+        .AddOtlpExporter());
 
 builder.Services.AddMassTransit(x =>
 {
