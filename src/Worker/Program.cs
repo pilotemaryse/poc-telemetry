@@ -1,6 +1,7 @@
 using DockerCrudDemo.Worker.Consumers;
 using MassTransit;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -28,6 +29,10 @@ builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService(serviceName))
     .WithTracing(t => t
         .AddSource("MassTransit")
+        .AddOtlpExporter())
+    .WithMetrics(m => m
+        .AddRuntimeInstrumentation()
+        .AddMeter("MassTransit")
         .AddOtlpExporter());
 
 builder.Services.AddMassTransit(x =>

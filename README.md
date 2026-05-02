@@ -1,37 +1,85 @@
 # DockerCrudDemo
 
-.NET 9 Clean Architecture + Angular 19 + MySQL 8, all in Docker.
+.NET 9 Clean Architecture + Angular 19 + MySQL 8 + RabbitMQ + shared observability stack.
 
-## Structure
+## Architecture
 
 ```
 src/
-  Domain/          # Entities (Product)
-  Application/     # Interfaces, DTOs
-  Infrastructure/  # EF Core DbContext, repositories, MySQL (Pomelo)
+  Domain/          # Entities + domain events
+  Application/     # Interfaces, DTOs, ProductService
+  Infrastructure/  # EF Core, repositories, MassTransit
   Api/             # ASP.NET Core controllers
-web/               # Angular app (served by nginx, proxies /api → api:8080)
-docker-compose.yml
+  Worker/          # Background consumer of RabbitMQ events
+web/               # Angular app (nginx, /api → api:8080)
+observability/     # Shared telemetry stack (Grafana + Prometheus + OpenSearch + otel-collector)
+docker-compose.yml # Project services only
 ```
 
 ## Run
 
+The observability stack is **separate** so multiple projects can share one Grafana.
+
+### One-time setup
+
 ```bash
-docker compose up --build
+docker network create observability
+```
+
+### Start observability stack (runs once, shared across projects)
+
+```bash
+cd observability
+docker compose up -d
+```
+
+- Grafana: http://localhost:3000 (anonymous Admin)
+- Prometheus: http://localhost:9090
+- OpenSearch: http://localhost:9200
+
+### Start this project
+
+```bash
+docker compose up --build -d
 ```
 
 - Frontend: http://localhost:4200
 - API: http://localhost:5000/api/products
-- MySQL: localhost:3306 (user `appuser` / pass `apppass` / db `appdb`)
+- RabbitMQ UI: http://localhost:15672 (guest/guest)
 
-The API auto-creates the schema on startup via `EnsureCreated()`.
+## Adding a new project to the same observability stack
 
-## Local dev (without Docker)
+In the new project's `docker-compose.yml`:
 
-```bash
-# API (needs MySQL running on localhost:3306)
-dotnet run --project src/Api
+1. Reference the `observability` external network:
+   ```yaml
+   networks:
+     default:
+     observability:
+       external: true
+       name: observability
+   ```
 
-# Web
-cd web && npm install && npm start
-```
+2. Attach services that emit telemetry to both networks:
+   ```yaml
+   api:
+     networks: [default, observability]
+     environment:
+       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+       OTEL_RESOURCE_ATTRIBUTES: "project=my-new-project"
+   ```
+
+3. (Optional) For RabbitMQ Prometheus scraping, add the discovery label:
+   ```yaml
+   rabbitmq:
+     labels:
+       telemetry.scrape: rabbitmq
+     networks: [default, observability]
+   ```
+
+The `project` label flows through automatically:
+- App metrics → set via `OTEL_RESOURCE_ATTRIBUTES`
+- Container metrics → otel-collector reads compose project name from Docker
+- RabbitMQ → prometheus discovers via Docker labels and tags with project
+
+In Grafana, the **Observability Overview** dashboard has a `$project` dropdown — select your new project to see its metrics in isolation.

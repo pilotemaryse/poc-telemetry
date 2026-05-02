@@ -1,6 +1,7 @@
 using DockerCrudDemo.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -34,6 +35,11 @@ builder.Services.AddOpenTelemetry()
         .AddHttpClientInstrumentation()
         .AddSource("Microsoft.EntityFrameworkCore")
         .AddSource("MassTransit")
+        .AddOtlpExporter())
+    .WithMetrics(m => m
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
         .AddOtlpExporter());
 
 builder.Services.AddInfrastructure(connectionString, rabbitHost, rabbitUser, rabbitPass);

@@ -12,3 +12,11 @@ datasources:
       timeField: "@timestamp"
       logMessageField: body
       logLevelField: severity_text
+
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    jsonData:
+      httpMethod: POST
