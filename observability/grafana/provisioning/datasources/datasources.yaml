@@ -1,22 +1,18 @@
 apiVersion: 1
 datasources:
-  - name: OpenSearch
-    type: grafana-opensearch-datasource
-    access: proxy
-    url: http://opensearch:9200
-    isDefault: true
-    jsonData:
-      database: "otel-logs"
-      flavor: opensearch
-      version: "2.17.0"
-      timeField: "@timestamp"
-      logMessageField: body
-      logLevelField: severity_text
-
-  - name: Prometheus
+  - name: Mimir
     type: prometheus
     uid: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: http://mimir:9009/prometheus
+    isDefault: true
     jsonData:
       httpMethod: POST
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000

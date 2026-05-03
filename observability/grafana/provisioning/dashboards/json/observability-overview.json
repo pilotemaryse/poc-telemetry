@@ -69,7 +69,7 @@
       "id": 3,
       "targets": [
         {
-          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count{project=~\"$project\"}[1m]))",
+          "expr": "sum by (http_route) (rate(http_server_request_duration_seconds_count{project=~\"$project\"}[5m]))",
           "legendFormat": "{{http_route}}",
           "refId": "A"
         }
@@ -115,12 +115,12 @@
       "id": 5,
       "targets": [
         {
-          "expr": "sum(rate(rabbitmq_queue_messages_published_total{project=~\"$project\"}[1m]))",
+          "expr": "sum(rate(rabbitmq_channel_messages_published_total{project=~\"$project\"}[5m]))",
           "legendFormat": "published",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(rabbitmq_queue_messages_delivered_total{project=~\"$project\"}[1m]))",
+          "expr": "sum(rate(rabbitmq_channel_messages_delivered_total{project=~\"$project\"}[5m]))",
           "legendFormat": "delivered",
           "refId": "B"
         }
@@ -185,7 +185,7 @@
       "id": 8,
       "targets": [
         {
-          "expr": "sum by (service_name, dotnet_gc_generation) (rate(dotnet_gc_collections_total{project=~\"$project\"}[1m]))",
+          "expr": "sum by (service_name, dotnet_gc_generation) (rate(dotnet_gc_collections_total{project=~\"$project\"}[5m]))",
           "legendFormat": "{{service_name}} gen{{dotnet_gc_generation}}",
           "refId": "A"
         }
@@ -204,7 +204,7 @@
       "id": 9,
       "targets": [
         {
-          "expr": "sum by (service_name) (rate(dotnet_exceptions_total{project=~\"$project\"}[1m]))",
+          "expr": "sum by (service_name) (rate(dotnet_exceptions_total{project=~\"$project\"}[5m]))",
           "legendFormat": "{{service_name}}",
           "refId": "A"
         }

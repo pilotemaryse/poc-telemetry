@@ -1,0 +1,60 @@
+multitenancy_enabled: false
+target: all,alertmanager,overrides-exporter
+
+common:
+  storage:
+    backend: filesystem
+    filesystem:
+      dir: /data/mimir
+
+blocks_storage:
+  storage_prefix: blocks
+  filesystem:
+    dir: /data/mimir/blocks
+
+compactor:
+  data_dir: /data/mimir/compactor
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+distributor:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: memberlist
+
+ingester:
+  ring:
+    instance_addr: 127.0.0.1
+    replication_factor: 1
+    kvstore:
+      store: memberlist
+
+ruler_storage:
+  storage_prefix: ruler
+  filesystem:
+    dir: /data/mimir/ruler
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: memberlist
+
+alertmanager:
+  data_dir: /data/mimir/alertmanager-data
+  sharding_ring:
+    replication_factor: 1
+
+alertmanager_storage:
+  storage_prefix: alertmanagerstorage
+
+memberlist:
+  bind_addr: ["127.0.0.1"]
+  advertise_addr: 127.0.0.1
+
+server:
+  http_listen_port: 9009
+  log_level: warn
