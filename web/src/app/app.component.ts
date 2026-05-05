@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { Product, ProductInput, ProductService } from './product.service';
+import { ErrorService } from './error.service';
 
 @Component({
   selector: 'app-root',
@@ -13,11 +14,13 @@ import { Product, ProductInput, ProductService } from './product.service';
 })
 export class AppComponent implements OnInit {
   private svc = inject(ProductService);
+  private errSvc = inject(ErrorService);
 
   products: Product[] = [];
   form: ProductInput = { name: '', price: 0, stock: 0 };
   editingId: number | null = null;
   error: string | null = null;
+  lastSimulation: string | null = null;
 
   ngOnInit() { this.load(); }
 
@@ -55,5 +58,15 @@ export class AppComponent implements OnInit {
   reset() {
     this.editingId = null;
     this.form = { name: '', price: 0, stock: 0 };
+  }
+
+  simulate(kind: 'throw' | 'notfound' | 'badrequest' | 'slow') {
+    this.lastSimulation = `Calling /${kind}...`;
+    this.errSvc.trigger(kind).subscribe({
+      next: () => { this.lastSimulation = `${kind}: 200 OK`; },
+      error: (e: { status: number; message: string }) => {
+        this.lastSimulation = `${kind}: HTTP ${e.status} — ${e.message}`;
+      }
+    });
   }
 }

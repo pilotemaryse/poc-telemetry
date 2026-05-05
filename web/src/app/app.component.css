@@ -5,3 +5,9 @@ table { width: 100%; border-collapse: collapse; }
 th, td { border: 1px solid #ddd; padding: .5rem; text-align: left; }
 th { background: #f4f4f4; }
 .error { color: #c00; }
+.simulate { margin: 1.5rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; }
+.simulate h2 { margin: 0 0 .75rem 0; font-size: 1rem; color: #555; }
+.sim-buttons { display: flex; gap: .5rem; flex-wrap: wrap; }
+.sim-buttons button { background: #fff3cd; border: 1px solid #ddb000; cursor: pointer; }
+.sim-buttons button:hover { background: #ffe69c; }
+.sim-result { margin-top: .75rem; font-family: monospace; font-size: .9rem; color: #333; }

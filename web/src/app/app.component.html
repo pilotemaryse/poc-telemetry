@@ -11,6 +11,17 @@
 
   <p class="error" *ngIf="error">{{ error }}</p>
 
+  <section class="simulate">
+    <h2>Simulate errors (for tracing)</h2>
+    <div class="sim-buttons">
+      <button type="button" (click)="simulate('throw')">500 — Throw exception</button>
+      <button type="button" (click)="simulate('notfound')">404 — Not found</button>
+      <button type="button" (click)="simulate('badrequest')">400 — Bad request</button>
+      <button type="button" (click)="simulate('slow')">Slow request (3s)</button>
+    </div>
+    <p class="sim-result" *ngIf="lastSimulation">{{ lastSimulation }}</p>
+  </section>
+
   <table>
     <thead>
       <tr><th>Id</th><th>Name</th><th>Price</th><th>Stock</th><th></th></tr>

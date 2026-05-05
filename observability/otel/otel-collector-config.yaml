@@ -34,6 +34,10 @@ processors:
 exporters:
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
   prometheusremotewrite:
     endpoint: http://mimir:9009/api/v1/push
     resource_to_telemetry_conversion:
@@ -46,11 +50,11 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/loki, debug]
+      exporters: [otlphttp/loki]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]
+      exporters: [otlp/tempo]
     metrics:
       receivers: [otlp, docker_stats, prometheus]
       processors: [batch]
