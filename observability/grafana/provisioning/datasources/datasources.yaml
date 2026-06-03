@@ -23,6 +23,11 @@ datasources:
           name: TraceID
           url: '${__value.raw}'
           urlDisplayLabel: View trace
+        - matcherType: label
+          matcherRegex: trace_id
+          name: ErrorDashboard
+          url: '/d/error-traces?from=now-1h&to=now'
+          urlDisplayLabel: Back to Error Traces
 
   - name: Tempo
     type: tempo
@@ -42,3 +47,6 @@ datasources:
         datasourceUid: prometheus
       nodeGraph:
         enabled: true
+      streamingEnabled:
+        search: false
+        metrics: false

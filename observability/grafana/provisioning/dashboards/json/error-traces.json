@@ -1,0 +1,177 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Explore logs (Loki)",
+      "type": "link",
+      "url": "/explore?left=%7B%22datasource%22:%22loki%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bservice_name%3D%5C%22api%5C%22%7D%20%7C%20json%20%7C%20severity_text%3D%5C%22Error%5C%22%22%7D%5D,%22range%22:%7B%22from%22:%22now-1h%22,%22to%22:%22now%22%7D%7D",
+      "targetBlank": false,
+      "icon": "external link",
+      "tooltip": "Open Loki Explore with api error logs"
+    },
+    {
+      "title": "Traces Overview",
+      "type": "link",
+      "url": "/d/traces-overview",
+      "icon": "dashboard",
+      "tooltip": "Go to the global traces dashboard"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Errors overview — project: $project",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Error spans (last 15m)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(increase(traces_spanmetrics_calls_total{project=~\"$project\", status_code=~\"STATUS_CODE_ERROR|ERROR\"}[15m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Error rate % (last 5m)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "100 * sum(rate(traces_spanmetrics_calls_total{project=~\"$project\", status_code=~\"STATUS_CODE_ERROR|ERROR\"}[5m])) / clamp_min(sum(rate(traces_spanmetrics_calls_total{project=~\"$project\"}[5m])), 1e-9)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 } ] } }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Error rate by service (errors/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(traces_spanmetrics_calls_total{project=~\"$project\", status_code=~\"STATUS_CODE_ERROR|ERROR\"}[5m]))",
+          "legendFormat": "{{service_name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "min": 0 }, "overrides": [] },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "sum"] }
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Top error spans (15m)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (service_name, span_name) (increase(traces_spanmetrics_calls_total{project=~\"$project\", status_code=~\"STATUS_CODE_ERROR|ERROR\"}[15m])))",
+          "legendFormat": "{{service_name}} — {{span_name}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "continuous-RdYlGr" } }, "overrides": [] }
+    },
+    {
+      "type": "heatmap",
+      "title": "Error latency distribution",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum by (le) (increase(traces_spanmetrics_latency_bucket{project=~\"$project\", status_code=~\"STATUS_CODE_ERROR|ERROR\"}[$__rate_interval]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": { "scheme": "Oranges", "mode": "scheme", "steps": 64, "reverse": false },
+        "yAxis": { "unit": "s", "decimals": 2 },
+        "tooltip": { "show": true, "yHistogram": true },
+        "legend": { "show": true }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Error traces",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "id": 101,
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Traces with errors (click traceID to open waterfall)",
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 18 },
+      "id": 6,
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ span.http.response.status_code >= 400 } | select(span.http.response.status_code, span.http.route, span.http.request.method, span.error.type, span.url.path)",
+          "limit": 100,
+          "tableType": "spans",
+          "refId": "A"
+        }
+      ],
+      "options": { "showHeader": true }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["traces", "errors", "tempo"],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(traces_spanmetrics_calls_total, project)", "refId": "PrometheusVariableQueryEditor-VariableQuery" },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Error Traces",
+  "uid": "error-traces",
+  "version": 1,
+  "weekStart": ""
+}
