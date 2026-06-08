@@ -21,6 +21,12 @@ receivers:
                 - name: label
                   values: ["telemetry.scrape=rabbitmq"]
           relabel_configs:
+            # rabbitmq expose plusieurs ports sur 2 réseaux -> docker_sd crée
+            # une cible par (réseau, port). On ne garde que la bonne : réseau
+            # observability (routable depuis le collector) + port métriques 15692.
+            - source_labels: [__meta_docker_network_name, __meta_docker_port_private]
+              regex: observability;15692
+              action: keep
             - source_labels: [__meta_docker_container_label_com_docker_compose_project]
               target_label: project
             - source_labels: [__meta_docker_container_name]
@@ -36,6 +42,13 @@ receivers:
                 - name: label
                   values: ["telemetry.scrape=demo-python"]
           relabel_configs:
+            # Le conteneur est sur 2 réseaux -> docker_sd crée une cible par
+            # réseau. On ne garde que celle du réseau observability (la seule
+            # routable depuis le collector), sinon la cible du réseau default
+            # reste injoignable et maintient up=0 en permanence.
+            - source_labels: [__meta_docker_network_name]
+              regex: observability
+              action: keep
             - source_labels: [__meta_docker_container_label_com_docker_compose_project]
               target_label: project
             - source_labels: [__meta_docker_container_name]
@@ -51,6 +64,13 @@ receivers:
                 - name: label
                   values: ["telemetry.scrape=api"]
           relabel_configs:
+            # Le conteneur est sur 2 réseaux -> docker_sd crée une cible par
+            # réseau. On ne garde que celle du réseau observability (la seule
+            # routable depuis le collector), sinon la cible du réseau default
+            # reste injoignable et maintient up=0 en permanence.
+            - source_labels: [__meta_docker_network_name]
+              regex: observability
+              action: keep
             - source_labels: [__meta_docker_container_label_com_docker_compose_project]
               target_label: project
             - source_labels: [__meta_docker_container_name]
@@ -66,6 +86,13 @@ receivers:
                 - name: label
                   values: ["telemetry.scrape=worker"]
           relabel_configs:
+            # Le conteneur est sur 2 réseaux -> docker_sd crée une cible par
+            # réseau. On ne garde que celle du réseau observability (la seule
+            # routable depuis le collector), sinon la cible du réseau default
+            # reste injoignable et maintient up=0 en permanence.
+            - source_labels: [__meta_docker_network_name]
+              regex: observability
+              action: keep
             - source_labels: [__meta_docker_container_label_com_docker_compose_project]
               target_label: project
             - source_labels: [__meta_docker_container_name]
