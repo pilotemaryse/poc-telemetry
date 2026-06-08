@@ -54,6 +54,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_SERVICE_NAME: api
       OTEL_RESOURCE_ATTRIBUTES: "project=poc-telemetry"
+    labels:
+      telemetry.scrape: api
     depends_on:
       mysql:
         condition: service_healthy
@@ -77,6 +79,8 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_SERVICE_NAME: worker
       OTEL_RESOURCE_ATTRIBUTES: "project=poc-telemetry"
+    labels:
+      telemetry.scrape: worker
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -106,11 +110,18 @@ services:
       OTEL_METRICS_EXPORTER: otlp
       OTEL_TRACES_EXPORTER: otlp
       OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: "true"
+    labels:
+      telemetry.scrape: demo-python
     networks:
       - default
       - observability
     ports:
       - "5001:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 networks:
   default:

@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("demo-python")
@@ -10,7 +11,20 @@ app = FastAPI(title="demo-python")
 
 @app.get("/")
 def root():
-    return {"service": "demo-python", "endpoints": ["/errors/throw", "/errors/notfound", "/errors/badrequest", "/errors/slow"]}
+    return {"service": "demo-python", "endpoints": ["/health", "/metrics", "/errors/throw", "/errors/notfound", "/errors/badrequest", "/errors/slow"]}
+
+
+@app.get("/health")
+def health():
+    """Liveness probe — renvoie 200 tant que le service répond."""
+    return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics():
+    """Endpoint Prometheus scrappé par l'OTel Collector -> alimente le signal `up`
+    (utilisé par l'alerte Grafana "Service down")."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/errors/throw")

@@ -40,7 +40,9 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
-        .AddOtlpExporter());
+        .AddOtlpExporter()
+        // Endpoint Prometheus /metrics scrappé par l'OTel Collector -> signal `up`
+        .AddPrometheusExporter());
 
 builder.Services.AddInfrastructure(connectionString, rabbitHost, rabbitUser, rabbitPass);
 builder.Services.AddControllers();
@@ -71,5 +73,9 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors();
 app.MapControllers();
+
+// Liveness probe + endpoint de scrape Prometheus (alimente l'alerte "Service down").
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();

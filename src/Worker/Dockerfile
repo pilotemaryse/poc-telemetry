@@ -10,4 +10,6 @@ RUN dotnet publish Worker/Worker.csproj -c Release -o /app/publish /p:UseAppHost
 FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+# Port du listener Prometheus (/metrics) pour le scrape de l'OTel Collector
+EXPOSE 9464
 ENTRYPOINT ["dotnet", "DockerCrudDemo.Worker.dll"]

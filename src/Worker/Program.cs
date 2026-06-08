@@ -33,7 +33,10 @@ builder.Services.AddOpenTelemetry()
     .WithMetrics(m => m
         .AddRuntimeInstrumentation()
         .AddMeter("MassTransit")
-        .AddOtlpExporter());
+        .AddOtlpExporter()
+        // Le worker n'a pas de serveur HTTP : on expose /metrics via un listener
+        // dédié sur :9464, scrappé par l'OTel Collector -> signal `up`.
+        .AddPrometheusHttpListener(o => o.UriPrefixes = new[] { "http://*:9464/" }));
 
 builder.Services.AddMassTransit(x =>
 {
