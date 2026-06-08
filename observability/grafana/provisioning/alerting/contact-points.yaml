@@ -1,0 +1,16 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: discord
+    receivers:
+      - uid: discord-receiver
+        type: discord
+        settings:
+          # Webhook injecté via variable d'env (voir docker-compose.yml)
+          url: $__env{DISCORD_WEBHOOK_URL}
+          # Message Discord — supporte le templating Go de Grafana
+          title: '{{ template "discord.title" . }}'
+          message: '{{ template "discord.message" . }}'
+          use_discord_username: true
+        disableResolveMessage: false

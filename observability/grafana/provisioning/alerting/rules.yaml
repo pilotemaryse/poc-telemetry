@@ -1,0 +1,183 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: error-rate
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: high-error-rate
+        title: Taux d'erreur élevé
+        condition: C
+        for: 2m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Taux d''erreur global à {{ printf "%.2f" $values.B.Value }}% sur les 5 dernières minutes (seuil 5%)'
+        data:
+          # A — taux d'erreur global en % (spans en erreur / total)
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              expr: >-
+                100
+                * sum(rate(traces_spanmetrics_calls_total{status_code=~"STATUS_CODE_ERROR|ERROR"}[5m]))
+                / clamp_min(sum(rate(traces_spanmetrics_calls_total[5m])), 1e-9)
+
+          # B — réduit la série à une seule valeur (dernière)
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+
+          # C — condition : déclenche si > 5 %
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5]
+
+  - orgId: 1
+    name: latency
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: high-latency-p95
+        title: Latence p95 élevée
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'p95 de {{ $labels.service_name }} à {{ printf "%.3f" $values.B.Value }} s (seuil 1 s)'
+        data:
+          # A — p95 de latence par service (en secondes)
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              expr: >-
+                histogram_quantile(
+                  0.95,
+                  sum by (le, service_name) (rate(traces_spanmetrics_latency_bucket[5m]))
+                )
+
+          # B — une valeur par service
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+
+          # C — déclenche si p95 > 1 s
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1]
+
+  - orgId: 1
+    name: availability
+    folder: Alerts
+    interval: 30s
+    rules:
+      - uid: service-down
+        title: Service down
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Service {{ $labels.instance }} (job {{ $labels.job }}) injoignable depuis 1 min'
+        data:
+          # A — métrique up des cibles scrappées (1 = up, 0 = down)
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+              expr: up
+
+          # B — une valeur par cible
+          - refId: B
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+
+          # C — déclenche si up < 1 (donc 0)
+          - refId: C
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
