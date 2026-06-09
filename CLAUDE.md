@@ -48,6 +48,18 @@ docker compose up --build -d
 > The very first `--build` pulls base images and compiles three apps — can take
 > several minutes. **Do this well before any demo, not live.**
 
+### One-command preflight
+
+After step 1–2, a preflight script starts both stacks and verifies every service
+(and auto-fixes the nginx 502 below):
+
+```powershell
+.\preflight.ps1          # Windows; add -Build on the first run
+```
+```bash
+./preflight.sh           # macOS/Linux; add --build on the first run
+```
+
 ## URLs
 
 | What | URL | Notes |
