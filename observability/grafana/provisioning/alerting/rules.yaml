@@ -11,11 +11,11 @@ groups:
         condition: C
         for: 2m
         noDataState: OK
-        execErrState: Error
+        execErrState: OK
         labels:
           severity: warning
         annotations:
-          summary: 'Taux d''erreur global à {{ printf "%.2f" $values.B.Value }}% sur les 5 dernières minutes (seuil 5%)'
+          summary: 'Taux d''erreur global à {{ if $values.B }}{{ printf "%.2f" $values.B.Value }}{{ else }}?{{ end }}% sur les 5 dernières minutes (seuil 5%)'
         data:
           # A — taux d'erreur global en % (spans en erreur / total)
           - refId: A
@@ -72,11 +72,11 @@ groups:
         condition: C
         for: 5m
         noDataState: OK
-        execErrState: Error
+        execErrState: OK
         labels:
           severity: warning
         annotations:
-          summary: 'p95 de {{ $labels.service_name }} à {{ printf "%.3f" $values.B.Value }} s (seuil 1 s)'
+          summary: 'p95 de {{ $labels.service_name }} à {{ if $values.B }}{{ printf "%.3f" $values.B.Value }}{{ else }}?{{ end }} s (seuil 1 s)'
         data:
           # A — p95 de latence par service (en secondes)
           - refId: A
@@ -134,7 +134,7 @@ groups:
         condition: C
         for: 1m
         noDataState: OK
-        execErrState: Error
+        execErrState: OK
         labels:
           severity: critical
         annotations:
