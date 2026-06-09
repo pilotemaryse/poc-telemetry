@@ -12,7 +12,7 @@ src/
   Api/             # ASP.NET Core controllers
   Worker/          # Background consumer of RabbitMQ events
 web/               # Angular app (nginx, /api → api:8080)
-observability/     # Shared telemetry stack (Grafana + Prometheus + OpenSearch + otel-collector)
+observability/     # Shared telemetry stack (Grafana + Tempo + Loki + Mimir + otel-collector)
 docker-compose.yml # Project services only
 ```
 
@@ -34,8 +34,9 @@ docker compose up -d
 ```
 
 - Grafana: http://localhost:3000 (anonymous Admin)
-- Prometheus: http://localhost:9090
-- OpenSearch: http://localhost:9200
+- Mimir (metrics): http://localhost:9009
+- Loki (logs): http://localhost:3100
+- Tempo (traces): http://localhost:3200
 
 ### Start this project
 

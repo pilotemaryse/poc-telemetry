@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>PoC Telemetry — Observabilité unifiée</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css" />
+
+  <style>
+    :root { --accent: #f3a629; --accent2: #7eb6ff; --ok: #4ade80; --err: #f87171; }
+    .reveal { font-family: 'Segoe UI', -apple-system, sans-serif; }
+    .reveal h1 { color: var(--accent); font-weight: 600; }
+    .reveal h2 { color: var(--accent); font-weight: 600; }
+    .reveal h3 { color: var(--accent2); font-weight: 500; }
+    .reveal section { text-align: left; font-size: 0.85em; }
+    .reveal section.center { text-align: center; font-size: 1em; }
+    .reveal ul { display: block; margin-left: 1em; }
+    .reveal li { margin: 0.3em 0; line-height: 1.35; }
+    .reveal .card ul { margin-left: 0.8em; }
+    .reveal .card li { font-size: 0.92em; margin: 0.2em 0; line-height: 1.3; }
+    .reveal code { background: #1e1e1e; padding: 2px 6px; border-radius: 3px; color: var(--accent); font-size: 0.85em; }
+    .reveal pre { font-size: 0.55em; box-shadow: 0 4px 18px rgba(0,0,0,0.4); }
+    .reveal .mermaid { background: transparent; text-align: center; }
+    .reveal .mermaid svg { max-width: 100%; height: auto; }
+    .badge { display: inline-block; background: var(--accent); color: #000; padding: 2px 10px; border-radius: 12px; font-size: 0.6em; vertical-align: middle; margin-left: 0.4em; font-weight: 600; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1em; }
+    .card { background: #1a1a2e; padding: 1em 1.2em; border-radius: 8px; border-left: 4px solid var(--accent); }
+    .card.ok { border-color: var(--ok); }
+    .card.err { border-color: var(--err); }
+    .card.blue { border-color: var(--accent2); }
+    .card h3 { margin-top: 0; }
+    .reveal .tiny { font-size: 0.55em; opacity: 0.7; }
+    .pill { display: inline-block; background: #2a2a3e; padding: 3px 10px; border-radius: 14px; font-size: 0.7em; margin: 2px; }
+    .pill.dotnet { background: #512bd4; }
+    .pill.py { background: #3776ab; }
+    .pill.otel { background: #f5a800; color: #000; }
+    .pill.grafana { background: #f3a629; color: #000; }
+    .footnote { position: absolute; bottom: 10px; right: 20px; font-size: 0.5em; opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- TITLE -->
+      <section class="center">
+        <h1 style="font-size: 2.2em;">PoC Telemetry</h1>
+        <h3 style="color:#ddd; font-weight:300;">Observabilité unifiée<br/>traces · logs · metrics</h3>
+        <p style="margin-top:2em;">
+          <span class="pill otel">OpenTelemetry</span>
+          <span class="pill grafana">Grafana</span>
+          <span class="pill">Tempo</span>
+          <span class="pill">Loki</span>
+          <span class="pill">Mimir</span>
+        </p>
+        <p class="tiny" style="margin-top:3em;">Maryse · 2026</p>
+        <aside class="notes">
+          15 s. Accroche : "Je vous présente une preuve de concept d'observabilité : voir ce qui se passe dans nos applications — traces, logs, métriques — au même endroit, et être alerté quand ça dérape. Le tout 100% open-source et reproductible."
+        </aside>
+      </section>
+
+      <!-- AGENDA -->
+      <section>
+        <h2>Agenda</h2>
+        <ol>
+          <li>Pourquoi l'observabilité?</li>
+          <li>Architecture &amp; stack</li>
+          <li>Les 3 piliers + corrélation</li>
+          <li>Multi-projets, un seul stack</li>
+          <li>Alerting &amp; notifications Discord</li>
+          <li>Démo live</li>
+          <li>Bilan &amp; prochaines étapes</li>
+        </ol>
+        <p class="tiny" style="margin-top:1.2em;">~10 min · détails techniques en annexe pour le Q&amp;A</p>
+        <aside class="notes">
+          15 s. "Voici le plan : pourquoi, comment c'est construit, les 3 piliers, le multi-projets, l'alerting qu'on vient d'ajouter, une démo, et la suite. Les détails techniques sont en annexe pour vos questions."
+        </aside>
+      </section>
+
+      <!-- WHY -->
+      <section>
+        <h2>Pourquoi l'observabilité?</h2>
+        <div class="grid-3">
+          <div class="card err">
+            <h3>Sans</h3>
+            <ul>
+              <li>"Ça marche en local"</li>
+              <li>Logs éparpillés</li>
+              <li>Pas de vue système</li>
+              <li>Debug à l'aveugle en prod</li>
+            </ul>
+          </div>
+          <div class="card blue">
+            <h3>Avec</h3>
+            <ul>
+              <li>Une seule fenêtre</li>
+              <li>Cause racine en quelques clics</li>
+              <li>Comparaison entre projets</li>
+              <li>SLO mesurables</li>
+            </ul>
+          </div>
+          <div class="card ok">
+            <h3>Objectif PoC</h3>
+            <ul>
+              <li>Stack <strong>open-source</strong></li>
+              <li>Standard <strong>OpenTelemetry</strong></li>
+              <li>Reproductible (Docker)</li>
+              <li>Multi-projets / multi-stacks</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">
+          ~1 min. Le "pourquoi", langage métier : "Sans observabilité, quand un client a un problème en production, on debug à l'aveugle — les logs sont éparpillés, on ne voit pas le système. Avec, on trouve la cause racine en quelques clics, on compare nos projets, on mesure la qualité de service. L'objectif du PoC : prouver qu'on peut faire ça avec de l'open-source et un standard, OpenTelemetry."
+        </aside>
+      </section>
+
+      <!-- ARCHITECTURE -->
+      <section>
+        <h2>Architecture</h2>
+        <div class="mermaid">
+flowchart LR
+    USER([User])
+    subgraph P1[".NET project"]
+        WEB[Angular :4200]
+        API[.NET API :5000]
+        WORKER[Worker]
+        MYSQL[(MySQL)]
+        RMQ{{RabbitMQ}}
+    end
+    subgraph P2["Python project"]
+        PY[FastAPI :5001]
+    end
+    subgraph Obs["Observability — shared"]
+        OTEL[otel-collector]
+        TEMPO[(Tempo)]
+        LOKI[(Loki)]
+        MIMIR[(Mimir)]
+        GRAF[Grafana :3000]
+    end
+    USER --> WEB --> API
+    API --> MYSQL
+    API --> RMQ --> WORKER
+    USER --> PY
+    API -.OTLP.-> OTEL
+    WORKER -.OTLP.-> OTEL
+    PY -.OTLP.-> OTEL
+    OTEL -.-> TEMPO
+    OTEL -.-> LOKI
+    OTEL -.-> MIMIR
+    TEMPO -.span metrics.-> MIMIR
+    GRAF --> TEMPO
+    GRAF --> LOKI
+    GRAF --> MIMIR
+    USER --> GRAF
+    classDef app fill:#1f6feb,stroke:#0d419d,color:#fff
+    classDef py fill:#8957e5,stroke:#553098,color:#fff
+    classDef obs fill:#1a7f37,stroke:#0d5226,color:#fff
+    class WEB,API,WORKER app
+    class PY py
+    class OTEL,TEMPO,LOKI,MIMIR,GRAF obs
+        </div>
+        <aside class="notes">
+          ~1 min. "À gauche, deux projets : une app .NET (web, API, worker, base, file de messages) et un service Python. Tous envoient leur télémétrie au même endroit via OpenTelemetry. À droite, la stack d'observabilité partagée : le collecteur reçoit tout, range les traces dans Tempo, les logs dans Loki, les métriques dans Mimir, et Grafana affiche le tout. Point clé : la stack est partagée entre plusieurs projets."
+        </aside>
+      </section>
+
+      <!-- STACK -->
+      <section>
+        <h2>La stack <span class="badge">100% open-source</span></h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>📡 Collecte</h3>
+            <ul>
+              <li><strong>OpenTelemetry SDK</strong> côté apps (.NET + Python)</li>
+              <li><strong>OTel Collector</strong>: hub central, OTLP gRPC</li>
+              <li>Auto-instrumentation FastAPI, EF Core, MassTransit</li>
+            </ul>
+          </div>
+          <div class="card blue">
+            <h3>💾 Stockage</h3>
+            <ul>
+              <li><strong>Tempo</strong> — traces</li>
+              <li><strong>Loki</strong> — logs</li>
+              <li><strong>Mimir</strong> — metrics (compatible Prometheus)</li>
+            </ul>
+          </div>
+          <div class="card ok">
+            <h3>📊 Visualisation</h3>
+            <ul>
+              <li><strong>Grafana</strong></li>
+              <li>Dashboards provisionnés en JSON</li>
+              <li>Datasources configurés en YAML</li>
+            </ul>
+          </div>
+          <div class="card" style="border-color:var(--accent2);">
+            <h3>🚀 Déploiement</h3>
+            <ul>
+              <li><strong>Docker Compose</strong></li>
+              <li>2 stacks: app + observabilité</li>
+              <li>Réseau Docker partagé</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">
+          ~30-40 s (accélérer si court). "Trois briques : on collecte avec OpenTelemetry (auto-instrumenté, peu de code), on stocke avec la suite Grafana — Tempo, Loki, Mimir — et on visualise dans Grafana. Tout est décrit en fichiers : dashboards, sources de données, et maintenant les alertes."
+        </aside>
+      </section>
+
+      <!-- 3 PILIERS -->
+      <section>
+        <section>
+          <h2>Les 3 piliers</h2>
+          <div class="grid-3" style="margin-top:1.5em;">
+            <div class="card">
+              <h3>🔍 Traces</h3>
+              <p>Le voyage d'une requête à travers tous les services. Spans imbriqués, durées, attributs.</p>
+            </div>
+            <div class="card blue">
+              <h3>📝 Logs</h3>
+              <p>Événements horodatés. Liés au trace_id pour contextualiser.</p>
+            </div>
+            <div class="card ok">
+              <h3>📈 Metrics</h3>
+              <p>Séries temporelles agrégées. RED (Rate, Errors, Duration), USE, business KPIs.</p>
+            </div>
+          </div>
+          <aside class="notes">
+            ~1 min. "Trois types de signaux complémentaires. La trace, c'est le voyage d'une requête à travers les services. Le log, c'est un événement horodaté. La métrique, c'est une tendance agrégée dans le temps. Les slides suivantes (traces détaillées, span metrics) sont en option — je les garde pour les questions si on manque de temps."
+          </aside>
+        </section>
+
+        <section>
+          <h2>Traces — exemple</h2>
+          <ul>
+            <li><code>User → web → api → RabbitMQ → worker</code></li>
+            <li>Chaque saut = 1 span (durée, statut, attributs)</li>
+            <li>Tous les spans partagent le même <code>trace_id</code></li>
+            <li>Vue "waterfall" pour identifier le goulot</li>
+          </ul>
+          <p class="tiny">Auto-instrumentation .NET ajoute HTTP, EF Core, MassTransit. Python = FastAPI, requests, logging.</p>
+        </section>
+
+        <section>
+          <h2>Span Metrics — généré automatiquement</h2>
+          <p>Tempo a un <strong>metrics-generator</strong> qui regarde les traces et produit:</p>
+          <ul>
+            <li><code>traces_spanmetrics_calls_total</code> — RED rate</li>
+            <li><code>traces_spanmetrics_latency_bucket</code> — RED duration</li>
+            <li><code>traces_service_graph_request_total</code> — dépendances</li>
+          </ul>
+          <p>→ poussés dans Mimir via remote_write, avec le label <code>project</code>.</p>
+        </section>
+      </section>
+
+      <!-- CORRELATION -->
+      <section>
+        <h2>Corrélation cross-signaux</h2>
+        <p>Le vrai pouvoir: passer d'un signal à l'autre <strong>en un clic</strong>.</p>
+        <div class="mermaid">
+flowchart LR
+    T[🔍 Trace<br/>waterfall] -->|Logs for span| L[📝 Loki logs]
+    L -->|View trace| T
+    L -->|Back to Error Traces| D[📊 Dashboard]
+    D -->|click traceID| T
+    classDef sig fill:#1a1a2e,stroke:#f3a629,color:#fff
+    class T,L,D sig
+        </div>
+        <ul style="margin-top:1em;">
+          <li>Tempo → Loki: <code>tracesToLogsV2</code> avec filtre <code>trace_id</code></li>
+          <li>Loki → Tempo: <code>derivedFields</code> sur <code>trace_id</code></li>
+          <li>Loki → Dashboard: derivedField custom "Back to Error Traces"</li>
+        </ul>
+        <aside class="notes">
+          ~45 s. LE point fort à vendre : "La vraie valeur, c'est de passer d'un signal à l'autre en un clic. Je vois une erreur sur un graphe → je clique → j'ai la trace → je clique → j'ai les logs exacts de ce moment. Plus besoin de fouiller. C'est ce que je montrerai en démo."
+        </aside>
+      </section>
+
+      <!-- MULTI-PROJET -->
+      <section>
+        <h2>Multi-projets, un seul stack</h2>
+        <p>Tag <code>project</code> = resource attribute OTel propagé partout.</p>
+        <pre><code class="language-bash">OTEL_RESOURCE_ATTRIBUTES="project=poc-telemetry"   # .NET
+OTEL_RESOURCE_ATTRIBUTES="project=demo-python"     # Python</code></pre>
+        <ul style="margin-top:0.8em;">
+          <li>Variable <code>$project</code> dans les dashboards Grafana</li>
+          <li>Toutes les métriques portent le label <code>project</code></li>
+          <li>Ajouter un projet = lancer un service avec le bon attribut. Aucune config dans Grafana.</li>
+        </ul>
+        <aside class="notes">
+          ~45 s. Argument d'échelle : "Une seule stack d'observabilité sert plusieurs projets. Chaque signal porte une étiquette 'project'. Dans Grafana, un menu déroulant filtre par projet. Ajouter un nouveau projet ne demande aucune config dans Grafana — juste la bonne étiquette au démarrage."
+        </aside>
+      </section>
+
+      <!-- DASHBOARDS -->
+      <section>
+        <section>
+          <h2>Dashboards provisionnés</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Traces Overview</h3>
+              <ul>
+                <li>RED metrics par service</li>
+                <li>Heatmap de latence</li>
+                <li>Dernières traces (TraceQL)</li>
+                <li>Service graph dynamique</li>
+              </ul>
+            </div>
+            <div class="card err">
+              <h3>Error Traces</h3>
+              <ul>
+                <li>Compteurs + taux d'erreur</li>
+                <li>Top spans en erreur</li>
+                <li>Heatmap latence des erreurs</li>
+                <li>Table filtrée <code>http.status >= 400</code></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Service Graph</h2>
+          <p>Dépendances entre services, dessinées à partir des traces.</p>
+          <ul>
+            <li>Nœuds = services qui émettent des spans</li>
+            <li>Arêtes = appels client→server (HTTP, AMQP, gRPC...)</li>
+            <li>Annotations: req/s, latence, taux d'erreur</li>
+            <li>Construit par Tempo metrics-generator, lu par Grafana</li>
+          </ul>
+        </section>
+      </section>
+
+      <!-- ALERTING -->
+      <section>
+        <section>
+          <h2>Alerting &amp; notifications <span class="badge">Livré</span></h2>
+          <div class="grid-2">
+            <div class="card err">
+              <h3>🚨 3 règles d'alerte</h3>
+              <ul>
+                <li>Taux d'erreur global &gt; 5%</li>
+                <li>Latence p95 &gt; 1s <span class="tiny">(par service)</span></li>
+                <li>Service down — <code>up == 0</code></li>
+              </ul>
+            </div>
+            <div class="card blue">
+              <h3>💬 → Discord</h3>
+              <ul>
+                <li>Contact point + templates</li>
+                <li>🔴 FIRING / ✅ RESOLVED</li>
+                <li>Route <code>critical</code> plus rapide</li>
+              </ul>
+            </div>
+          </div>
+          <p class="tiny" style="margin-top:0.8em;">Provisionné en <strong>YAML</strong>, comme les dashboards et datasources — reproductible et versionné. Aucun clic dans l'UI.</p>
+          <aside class="notes">
+            ~1 min 30. Message clé pour le public mixte : "L'observabilité ne sert pas qu'à regarder après coup — elle nous prévient. On a 3 règles : taux d'erreur, latence, et service indisponible. Quand un seuil est franchi, un message part dans Discord, avec un code couleur rouge quand ça casse et vert quand c'est réglé. Tout est décrit en fichiers (YAML), donc reproductible d'un projet à l'autre." Insister : c'était dans 'à faire', c'est maintenant livré et testé.
+          </aside>
+        </section>
+
+        <section>
+          <h2>Le chemin d'une alerte</h2>
+          <div class="mermaid">
+flowchart LR
+    SIG[Erreur / latence /<br/>service down] --> M[(Mimir<br/>métriques)]
+    M --> R[Règle Grafana<br/>seuil + durée]
+    R --> P[Notification policy<br/>regroupe / route]
+    P --> D([💬 Discord])
+    classDef s fill:#1a1a2e,stroke:#f3a629,color:#fff
+    class SIG,M,R,P,D s
+          </div>
+          <p class="tiny">Validé de bout en bout : un service gelé déclenche le 🔴, puis le ✅ au rétablissement — délai réglé à ~1-2 min.</p>
+          <aside class="notes">
+            ~45 s. "Concrètement : la métrique arrive dans Mimir, une règle Grafana surveille un seuil pendant une durée, la 'policy' regroupe et route vers le bon canal. On l'a prouvé en gelant un service : message rouge, puis vert au redémarrage." Si pas de démo alerting live, dire qu'on le montrera sur Discord.
+          </aside>
+        </section>
+      </section>
+
+      <!-- DEMO -->
+      <section class="center">
+        <h1>🎬 Démo live</h1>
+        <ul style="display:inline-block; text-align:left; margin-top:1.5em;">
+          <li>Générer du trafic depuis l'app Angular</li>
+          <li>Voir les traces apparaître dans le dashboard</li>
+          <li>Drill-down sur une erreur 500</li>
+          <li>Saut vers les logs corrélés</li>
+          <li>Comparer poc-telemetry vs demo-python</li>
+        </ul>
+        <aside class="notes">
+          ~3 min — le cœur de la présentation. Suivre le runbook docs/demo-script.md. IMPORTANT : pré-armer le générateur d'erreurs ~2 min AVANT d'arriver ici pour que l'alerte Discord tombe pendant la démo. Plan B si le live échoue : montrer les messages Discord déjà reçus + captures. Garder un œil sur la montre.
+        </aside>
+      </section>
+
+      <!-- LIMITES -->
+      <section>
+        <h2>Limites actuelles</h2>
+        <ul>
+          <li>🟡 <strong>Angular non instrumenté</strong> → apparaît comme <code>user</code> dans le service graph. Pas de vue end-to-end depuis le clic utilisateur.</li>
+          <li>🟡 <strong>MySQL invisible</strong> dans le service graph (manque <code>peer_attributes</code> dans Tempo).</li>
+          <li>🟡 <strong>Staleness</strong>: un projet sans trafic depuis ~5 min disparaît du sélecteur.</li>
+          <li>🟡 <strong>Stockage local</strong>: Tempo/Loki en filesystem Docker, pas adapté production.</li>
+        </ul>
+        <aside class="notes">
+          ~30 s. Honnêteté = crédibilité : "C'est un PoC, voici ce qui manque pour la prod : front non instrumenté, MySQL absent du graphe, stockage local. Rien de bloquant, ce sont des étapes connues." Enchaîner sur le bilan.
+        </aside>
+      </section>
+
+      <!-- NEXT STEPS -->
+      <section>
+        <h2>Bilan &amp; prochaines étapes</h2>
+        <p style="margin:0 0 0.8em;"><span class="pill" style="background:var(--ok);color:#000;">✅ Livré</span> traces · logs · metrics · corrélation · multi-projets · <strong>alerting Discord</strong> — le tout en Docker, reproductible.</p>
+        <div class="grid-2">
+          <div class="card ok">
+            <h3>Court terme</h3>
+            <ul>
+              <li>Instrumenter Angular (OTel-JS)</li>
+              <li>Ajouter MySQL au service graph</li>
+              <li>Alerting multi-canal (Slack, email) + par projet</li>
+              <li>Sampling configurable</li>
+            </ul>
+          </div>
+          <div class="card blue">
+            <h3>Plus loin</h3>
+            <ul>
+              <li>Backend objet (S3/MinIO) pour Tempo &amp; Loki</li>
+              <li>Mimir cluster + rétention longue</li>
+              <li>SLO + error budgets</li>
+              <li>Profiling continu (Pyroscope)</li>
+            </ul>
+          </div>
+        </div>
+        <aside class="notes">
+          ~30 s. Conclure : "En résumé, le PoC livre les 3 piliers, la corrélation, le multi-projets et l'alerting Discord — entièrement reproductible. Côté suite : instrumenter le front, enrichir le graphe, et étendre l'alerting à d'autres canaux. C'est prêt à servir de socle pour nos prochains projets."
+        </aside>
+      </section>
+
+      <!-- THANK YOU -->
+      <section class="center">
+        <h1>Merci 🙏</h1>
+        <h3 style="color:#ddd; font-weight:300; margin-top:1em;">Questions?</h3>
+        <p style="margin-top:2em;" class="tiny">
+          Repo: github.com/pilotemaryse/poc-telemetry<br/>
+          Stack: OpenTelemetry · Tempo · Loki · Mimir · Grafana
+        </p>
+        <aside class="notes">
+          15 s. "Merci ! Le repo est public, tout est en Docker — vous pouvez le lancer en 2 commandes. J'ai des slides d'annexe sur les difficultés techniques si vous avez des questions." Puis enchaîner sur les questions.
+        </aside>
+      </section>
+
+      <!-- ========================= ANNEXE ========================= -->
+      <section class="center">
+        <h1 style="font-size:1.8em;">Annexe</h1>
+        <h3 style="color:#ddd; font-weight:300;">Détails techniques — pour le Q&amp;A</h3>
+        <p class="tiny" style="margin-top:2em;">Difficultés rencontrées · pièges OpenTelemetry · scrape multi-réseaux</p>
+      </section>
+
+      <!-- DIFFICULTÉS (annexe) -->
+      <section>
+        <h2>Difficultés rencontrées</h2>
+        <div class="grid-2">
+          <div class="card err">
+            <h3>http2: frame too large</h3>
+            <p class="tiny">Grafana 11.x active <code>traceQLStreaming</code> par défaut → tente gRPC sur le port HTTP de Tempo.</p>
+            <p class="tiny"><strong>Fix:</strong> <code>GF_FEATURE_TOGGLES_DISABLE=traceQLStreaming</code></p>
+          </div>
+          <div class="card err">
+            <h3>Service graph vide</h3>
+            <p class="tiny">Requête Prometheus brute ne nourrit pas le panneau nodeGraph.</p>
+            <p class="tiny"><strong>Fix:</strong> datasource Tempo + <code>queryType: serviceMap</code></p>
+          </div>
+          <div class="card err">
+            <h3>HTTP 201 dans la table d'erreurs</h3>
+            <p class="tiny">Filtre OTel <code>status = error</code> ≠ code HTTP. Exception après réponse → span error mais 201.</p>
+            <p class="tiny"><strong>Fix:</strong> filtrer sur <code>http.response.status_code >= 400</code></p>
+          </div>
+          <div class="card err">
+            <h3>Conventions OTel évoluent</h3>
+            <p class="tiny"><code>http.method</code> → <code>http.request.method</code>, <code>http.status_code</code> → <code>http.response.status_code</code>.</p>
+            <p class="tiny"><strong>Fix:</strong> queries TraceQL avec les noms récents.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCRAPE MULTI-RÉSEAUX (annexe) -->
+      <section>
+        <h2>Cibles de scrape dupliquées</h2>
+        <ul>
+          <li>Les conteneurs sont sur <strong>2 réseaux</strong> (app + observability).</li>
+          <li><code>docker_sd</code> crée une cible <strong>par (réseau, port)</strong> → doublons à <code>up=0</code> (réseau non routable depuis le collector).</li>
+          <li>Ces faux <code>up=0</code> maintenaient l'alerte <em>Service down</em> en firing.</li>
+        </ul>
+        <p class="tiny" style="margin-top:0.6em;"><strong>Fix:</strong> relabel <code>keep</code> sur le réseau <code>observability</code> (+ port métriques pour RabbitMQ, qui expose plusieurs ports).</p>
+        <aside class="notes">
+          À garder pour le Q&amp;A si on demande "comment vous avez câblé le service-down". Sinon ne pas y aller.
+        </aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { fontFamily: 'Segoe UI, sans-serif' } });
+
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      controls: true,
+      progress: true,
+      transition: 'slide',
+      width: 1280,
+      height: 800,
+      margin: 0.05,
+      minScale: 0.2,
+      maxScale: 2.0,
+      plugins: [ RevealHighlight, RevealNotes ]
+    });
+
+    function renderMermaid() {
+      document.querySelectorAll('.mermaid').forEach(async (el) => {
+        if (el.dataset.processed === 'true') return;
+        const code = el.textContent.trim();
+        const id = 'm' + Math.random().toString(36).slice(2);
+        try {
+          const { svg } = await mermaid.render(id, code);
+          el.innerHTML = svg;
+          el.dataset.processed = 'true';
+        } catch (e) {
+          el.innerHTML = '<pre style="color:#f87171;">' + e.message + '</pre>';
+        }
+      });
+    }
+
+    Reveal.on('ready', renderMermaid);
+    Reveal.on('slidechanged', renderMermaid);
+  </script>
+</body>
+</html>
